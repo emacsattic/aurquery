@@ -1,0 +1,10 @@
+Here is the start of an Emacs-based front-end to the
+Arch User Repository (AUR).
+Put aurquery.el and json.el on your load-path, and evaluate 
+(require 'aurquery)
+You can search the AUR using the command M-x aur-search.
+Soon, you will be able to request info pertaining to a package using
+M-x aur-info.
+
+At this moment, the code won't work.  Be patient!
+
