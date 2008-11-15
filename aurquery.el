@@ -67,19 +67,22 @@ The body of the response is a JSON object."
 	results))
     buffer))
 
+;; I should probably restructure this function.
 (defun aur-switch-to-response (status)
   "Build a buffer from server's response, and switch to it."
-  (let ((response (aur-parse-json-response)))
-    (let ((response-type (aur-response-type response)))
-      (if (eq response-type 'error) (aur-json-error response)
-	(let ((newbuffer
-		(if (eq response-type 'search)
-		  (aur-search-result-buffer response)
-		  (if (eq response-type 'info)
-		    (aur-info-result-buffer response)
-		    (error (format "Unknown result of type %s" response-type))))))
-	  (kill-buffer (current-buffer))
-	  (switch-to-buffer newbuffer))))))
+  (let ((response-buffer (current-buffer)))
+    (unwind-protect
+      (let ((response (aur-parse-json-response)))
+	(let ((response-type (aur-response-type response)))
+	  (if (eq response-type 'error) (aur-json-error response)
+	    (let ((newbuffer
+		    (if (eq response-type 'search)
+		      (aur-search-result-buffer response)
+		      (if (eq response-type 'info)
+			(aur-info-result-buffer response)
+			(error (format "Unknown result of type %s" response-type))))))
+	      (switch-to-buffer newbuffer)))))
+      (kill-buffer response-buffer))))
 
 (defun aur-send-request (request-url)
   (url-retrieve request-url #'aur-switch-to-response))
@@ -92,3 +95,9 @@ The body of the response is a JSON object."
       (aur-send-request
 	(apply #'aur-url-from-request 'search
 	  (car keyword-list) (cdr keyword-list))))))
+
+(defun aur-info (name-or-id)
+  "Obtain detailed information about the package NAME-OR-ID."
+  (interactive "sPackage name or ID: ")
+  (aur-send-request
+    (aur-url-from-request 'info name-or-id)))
