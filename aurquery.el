@@ -28,15 +28,18 @@
   "Prefix of URLs that represent AUR queries.")
 
 ;; Accessor functions.
+(defun aur-alist-val (key alist)
+  "Return the value associated with KEY in ALIST."
+  (cdr (assq key alist)))
 
 (defun aur-response-type (response)
   "Return the type of RESPONSE.
 The return value should be one of info, search, or error."
-  (cdr (assq 'type response)))
+  (aur-alist-val 'type response)))
 
 (defun aur-get-result-name (result)
   "Return the value associated with key Name in alist RESULT."
-  (cdr (assq 'Name result)))
+  (aur-alist-val 'Name result))
 
 (defun aur-url-from-request (request-type first-arg &rest rest-args)
   "Produce an URL representing REQUEST."
@@ -54,9 +57,27 @@ The body of the response is a JSON object."
   (goto-char url-http-end-of-headers)
   (json-read))
 
+(defun aur-info-result-buffer (response)
+  "Make a buffer containing detailed information about a package."
+  (let ((result (aur-alist-val 'results response))
+	 (buffer (generate-new-buffer "*AUR Info*")))
+    (save-excursion
+      (set-buffer buffer)
+      (insert (format "Name: %s\n" (aur-get-result-name result)))
+      (insert (format "Description: %s\n" (aur-alist-val 'Description result)))
+      (insert (format "Version: %s\n" (aur-alist-val 'Version result)))
+      (insert (format "License: %s\n" (aur-alist-val 'License result)))
+      (insert (format "Homepage: %s\n" (aur-alist-val 'Homepage result)))
+      (insert (format "Votes: %d\n" (aur-alist-val 'NumVotes result)))
+      (insert (format "Link to PKGBUILD: %s%s\n"
+		aur--url-base (aur-alist-val 'URLPath result)))
+      (when (not (zerop (aur-alist-val 'OutOfDate result)))
+	(insert "This package is out of date.\n"))
+      buffer)))
+
 (defun aur-search-result-buffer (response)
   "Make a buffer containing a list of search results."
-  (let ((results (cdr (assq 'results response)))
+  (let ((results (aur-alist-val 'results response))
 	 (buffer (generate-new-buffer "*AUR Search*")))
     (save-excursion
       (set-buffer buffer)
