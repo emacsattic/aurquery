@@ -24,8 +24,10 @@
 
 (require 'json)
 
-(defconst aur--url-prefix "http://aur.archlinux.org/rpc.php?"
-  "Prefix of URLs that represent AUR queries.")
+(defconst aur--url-base "http://aur.archlinux.org"
+  "Prefix of URLs used to access the AUR.")
+(defconst aur--rpc-path "/rpc.php?"
+  "Path of the RPC handler page.")
 
 ;; Accessor functions.
 (defun aur-alist-val (key alist)
@@ -45,7 +47,7 @@ The return value should be one of info, search, or error."
   "Produce an URL representing REQUEST."
   (if (not (memq request-type '(info search)))
     (error "Query type is not one of info or search")
-    (concat aur--url-prefix "type=" (symbol-name request-type) "&"
+    (concat aur--url-base aur--rpc-path "type=" (symbol-name request-type) "&"
       (mapconcat
 	(lambda (arg) (concat "arg=" (url-hexify-string arg)))
 	(cons first-arg rest-args) "&"))))
