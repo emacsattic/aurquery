@@ -69,11 +69,11 @@ The body of the response is a JSON object."
       (insert (format "Description: %s\n" (aur-alist-val 'Description result)))
       (insert (format "Version: %s\n" (aur-alist-val 'Version result)))
       (insert (format "License: %s\n" (aur-alist-val 'License result)))
-      (insert (format "Homepage: %s\n" (aur-alist-val 'Homepage result)))
-      (insert (format "Votes: %d\n" (aur-alist-val 'NumVotes result)))
+      (insert (format "Homepage: %s\n" (aur-alist-val 'URL result)))
+      (insert (format "Votes: %s\n" (aur-alist-val 'NumVotes result)))
       (insert (format "Link to PKGBUILD: %s%s\n"
 		aur--url-base (aur-alist-val 'URLPath result)))
-      (when (not (zerop (aur-alist-val 'OutOfDate result)))
+      (when (not (zerop (string-to-int (aur-alist-val 'OutOfDate result))))
 	(insert "This package is out of date.\n"))
       buffer)))
 
