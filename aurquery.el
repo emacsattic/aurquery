@@ -29,6 +29,25 @@
 (defconst aur--rpc-path "/rpc.php?"
   "Path of the RPC handler page.")
 
+;; Here's a common pattern.  Build a buffer for the user by executing
+;; some Lisp forms.  If one of those forms causes an error, then get rid
+;; of the partially-filled buffer.
+
+(defmacro aur-safe-fill-buffer (name &rest forms)
+  "Safely generate buffer NAME, and fill it by executing FORMS.
+Here, *safely* means that the buffer is destroyed if one of FORMS
+signals an error.  Note that with-temp-buffer is inappropriate,
+because we want to use the buffer if it was successfully filled."
+  (let ((new-buffer (gensym))
+	 (success (gensym)))
+    `(let ((,new-buffer (generate-new-buffer ,name))
+	    (,success nil))
+       (save-excursion
+	 (set-buffer ,new-buffer)
+	 (unwind-protect
+	   (progn ,@forms (setq ,success t) ,new-buffer)
+	   (when (not ,success) (kill-buffer ,new-buffer)))))))
+
 ;; Accessor functions.
 (defun aur-alist-val (key alist)
   "Return the value associated with KEY in ALIST."
@@ -62,32 +81,30 @@ The body of the response is a JSON object."
 (defun aur-info-result-buffer (response)
   "Make a buffer containing detailed information about a package."
   (let ((result (aur-alist-val 'results response))
-	 (buffer (generate-new-buffer "*AUR Info*")))
-    (save-excursion
-      (set-buffer buffer)
-      (insert (format "Name: %s\n" (aur-get-result-name result)))
-      (insert (format "Description: %s\n" (aur-alist-val 'Description result)))
-      (insert (format "Version: %s\n" (aur-alist-val 'Version result)))
-      (insert (format "License: %s\n" (aur-alist-val 'License result)))
-      (insert (format "Homepage: %s\n" (aur-alist-val 'URL result)))
-      (insert (format "Votes: %s\n" (aur-alist-val 'NumVotes result)))
-      (insert (format "Link to PKGBUILD: %s%s\n"
-		aur--url-base (aur-alist-val 'URLPath result)))
-      (when (not (zerop (string-to-int (aur-alist-val 'OutOfDate result))))
-	(insert "This package is out of date.\n"))
-      buffer)))
+	 (buffer
+	   (aur-safe-fill-buffer "*AUR Info*"
+	     (insert (format "Name: %s\n" (aur-get-result-name result)))
+	     (insert (format "Description: %s\n"
+		       (aur-alist-val 'Description result)))
+	     (insert (format "Version: %s\n" (aur-alist-val 'Version result)))
+	     (insert (format "License: %s\n" (aur-alist-val 'License result)))
+	     (insert (format "Homepage: %s\n" (aur-alist-val 'URL result)))
+	     (insert (format "Votes: %s\n" (aur-alist-val 'NumVotes result)))
+	     (insert (format "Link to PKGBUILD: %s%s\n"
+		       aur--url-base (aur-alist-val 'URLPath result)))
+	     (when (not (zerop (string-to-int (aur-alist-val 'OutOfDate result))))
+	       (insert "This package is out of date.\n")))))
+    buffer))
 
 (defun aur-search-result-buffer (response)
   "Make a buffer containing a list of search results."
   (let ((results (aur-alist-val 'results response))
-	 (buffer (generate-new-buffer "*AUR Search*")))
-    (save-excursion
-      (set-buffer buffer)
-      (mapc
-	#'(lambda (result) 
-	    (insert (aur-get-result-name result))
-	    (terpri buffer))
-	results))
+	 (buffer
+	   (aur-safe-fill-buffer "*AUR Search*"
+	     (mapc
+	       #'(lambda (result) 
+		   (insert (format "%s\n" (aur-get-result-name result))))
+	results))))
     buffer))
 
 (defun aur-switch-to-response (status)
@@ -103,7 +120,8 @@ The body of the response is a JSON object."
 		    (aur-search-result-buffer response))
 		  ((eq response-type 'error) (aur-json-error response))
 		  (t (error "Unknown response of type %s" response-type)))))
-	(switch-to-buffer new-buffer))
+	(switch-to-buffer new-buffer)
+	(setq buffer-read-only t))
       (kill-buffer response-buffer))))
 
 (defun aur-send-request (request-url)
