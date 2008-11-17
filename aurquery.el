@@ -37,7 +37,7 @@
 (defun aur-response-type (response)
   "Return the type of RESPONSE.
 The return value should be one of info, search, or error."
-  (aur-alist-val 'type response)))
+  (intern (aur-alist-val 'type response)))
 
 (defun aur-get-result-name (result)
   "Return the value associated with key Name in alist RESULT."
@@ -90,21 +90,20 @@ The body of the response is a JSON object."
 	results))
     buffer))
 
-;; I should probably restructure this function.
 (defun aur-switch-to-response (status)
   "Build a buffer from server's response, and switch to it."
   (let ((response-buffer (current-buffer)))
     (unwind-protect
-      (let ((response (aur-parse-json-response)))
-	(let ((response-type (aur-response-type response)))
-	  (if (eq response-type 'error) (aur-json-error response)
-	    (let ((newbuffer
-		    (if (eq response-type 'search)
-		      (aur-search-result-buffer response)
-		      (if (eq response-type 'info)
-			(aur-info-result-buffer response)
-			(error (format "Unknown result of type %s" response-type))))))
-	      (switch-to-buffer newbuffer)))))
+      (let* ((response (aur-parse-json-response))
+	      (response-type (aur-response-type response))
+	      (new-buffer
+		(cond
+		  ((eq response-type 'info) (aur-info-result-buffer response))
+		  ((eq response-type 'search)
+		    (aur-search-result-buffer response))
+		  ((eq response-type 'error) (aur-json-error response))
+		  (t (error "Unknown response of type %s" response-type)))))
+	(switch-to-buffer new-buffer))
       (kill-buffer response-buffer))))
 
 (defun aur-send-request (request-url)
