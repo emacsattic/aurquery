@@ -1,10 +1,33 @@
-Here is the start of an Emacs-based front-end to the
-Arch User Repository (AUR).
-Put aurquery.el and json.el on your load-path, and evaluate 
-(require 'aurquery)
-You can search the AUR using the command M-x aur-search.
-Soon, you will be able to request info pertaining to a package using
-M-x aur-info.
+Introduction
+============
+aurquery-el is an Emacs-based front-end for the Arch User Repository
+(AUR).  At present, it offers little functionality.  It provides two features:
+search for a package, and obtain detailed information about a package.
+aurquery-el saves time and keystrokes for those of us whose primary operating
+environment is Emacs.
 
-At this moment, the code won't work.  Be patient!
+Installation
+============
+Copy aurquery.el and json.el to some directory in your load-path.
+Add the form (require 'aurquery) to your .emacs.  It couldn't be simpler.
 
+Usage
+=====
+Aurquery-el provides two user-visible commands: aur-search and aur-info.
+The user might wish to bind these to keystrokes in the global keymap.
+aur-search prompts for a list of keywords, and it uses these to query the
+server.  It creates a new buffer and fills it with results.  Each line
+of the buffer contains the name of a single package.
+aur-info asks the user for the name of a package.  It requests detailed
+information about that package from the server and places the details in
+a new buffer.  Both commands place the user in the buffer that contains
+their results.
+
+Author
+=====
+Aurquery-el was written by Chris Brannon <cmbrannon at cox dot net>.
+
+License
+=======
+aurquery-el is copyright (C) 2008, Christopher M. Brannon.  It is released
+under the GNU General Public License, version 3.

@@ -78,9 +78,20 @@ The body of the response is a JSON object."
   (goto-char url-http-end-of-headers)
   (json-read))
 
+;; aur-json-error is called when we receive a response of type "error".
+;; Note that this response type is sometimes used by the server to signal
+;; conditions that are not necessarily errors.  For example, the server
+;; sends an error response when the list of search results is empty.  So
+;; this function simply parrots the server's description of the condition.
+
+(defun aur-json-error (response)
+  "Handle a JSON object whose type field is error."
+  (let ((result (aur-alist-val 'results response)))
+    (error "Server said: %s" result)))
+
 (defun aur-info-result-buffer (response)
   "Make a buffer containing detailed information about a package."
-  (let ((result (aur-alist-val 'results response))
+  (let* ((result (aur-alist-val 'results response))
 	 (buffer
 	   (aur-safe-fill-buffer "*AUR Info*"
 	     (insert (format "Name: %s\n" (aur-get-result-name result)))
@@ -98,13 +109,13 @@ The body of the response is a JSON object."
 
 (defun aur-search-result-buffer (response)
   "Make a buffer containing a list of search results."
-  (let ((results (aur-alist-val 'results response))
+  (let* ((results (aur-alist-val 'results response))
 	 (buffer
 	   (aur-safe-fill-buffer "*AUR Search*"
 	     (mapc
 	       #'(lambda (result) 
 		   (insert (format "%s\n" (aur-get-result-name result))))
-	results))))
+	       results))))
     buffer))
 
 (defun aur-switch-to-response (status)
@@ -141,3 +152,7 @@ The body of the response is a JSON object."
   (interactive "sPackage name or ID: ")
   (aur-send-request
     (aur-url-from-request 'info name-or-id)))
+
+(provide 'aurquery)
+
+;;; aurquery.el ends here
