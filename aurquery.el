@@ -87,7 +87,7 @@ The body of the response is a JSON object."
 (defun aur-json-error (response)
   "Handle a JSON object whose type field is error."
   (let ((result (aur-alist-val 'results response)))
-    (error "Server said: %s" result)))
+    (error "%s" result)))
 
 (defun aur-info-result-buffer (response)
   "Make a buffer containing detailed information about a package."
@@ -122,17 +122,22 @@ The body of the response is a JSON object."
   "Build a buffer from server's response, and switch to it."
   (let ((response-buffer (current-buffer)))
     (unwind-protect
-      (let* ((response (aur-parse-json-response))
-	      (response-type (aur-response-type response))
-	      (new-buffer
-		(cond
-		  ((eq response-type 'info) (aur-info-result-buffer response))
-		  ((eq response-type 'search)
-		    (aur-search-result-buffer response))
-		  ((eq response-type 'error) (aur-json-error response))
-		  (t (error "Unknown response of type %s" response-type)))))
-	(switch-to-buffer new-buffer)
-	(setq buffer-read-only t))
+      (if (and status (eq (car status) :error))
+	;; Read the description of url-retrieve if you want an explanation
+	;; of status.
+	(let ((err-sym (caadr status)) (err-data (cdadr status)))
+	  (signal err-sym err-data))
+	(let* ((response (aur-parse-json-response))
+		(response-type (aur-response-type response))
+		(new-buffer
+		  (cond
+		    ((eq response-type 'info) (aur-info-result-buffer response))
+		    ((eq response-type 'search)
+		      (aur-search-result-buffer response))
+		    ((eq response-type 'error) (aur-json-error response))
+		    (t (error "Unknown response of type %s" response-type)))))
+	  (switch-to-buffer new-buffer)
+	  (setq buffer-read-only t)))
       (kill-buffer response-buffer))))
 
 (defun aur-send-request (request-url)
