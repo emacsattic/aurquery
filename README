@@ -8,7 +8,7 @@ environment is Emacs.
 
 Installation
 ============
-Copy aurquery.el and json.el to some directory in your load-path.
+Copy aurquery.el to some directory in your load-path.
 Add the form (require 'aurquery) to your .emacs.  It couldn't be simpler.
 
 Usage
